@@ -97,7 +97,7 @@ class ContigOrder:
     def output_scaff_order(self):
         output = []
         for i in self.chrom_list:
-            s = scaff_lookup[abs(i)]
+            s = self.scaff_lookup[abs(i)]
             if i < 0: strand = '-'
             else: strand = '+'
             output.append(strand+s)
