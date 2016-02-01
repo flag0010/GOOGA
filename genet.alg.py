@@ -93,6 +93,16 @@ class ContigOrder:
             self.Fitness = myfitness
             os.remove(fnm)
             memo[fnm] = myfitness
+    #
+    def output_scaff_order(self):
+        output = []
+        for i in chrom_list:
+            s = scaff_lookup[abs(i)]
+            if i < 0: strand = '-'
+            else: strand = '+'
+            output.append(strand+s)
+        return output
+
 
 
 c = ContigOrder(chrom_list, chrom_dict, scaff_lookup) 
@@ -106,12 +116,12 @@ population = [copy.copy(c) for i in xrange(POP_SIZE)]
 
 for i in range(1, POP_SIZE): #shuffle all but the first one, leave that at whatever is in the file (prob. v2 genome order)
     population[i].shuffle()  #randomize
-print [i.tag for i in population]
+#print [i.tag for i in population]
 
 start  = time.time()
 for gen in xrange(NGEN):
     for i in range(POP_SIZE):
-        print gen, i, time.time()-start
+        print "generation="+str(gen+1)+';', 'individual='+str(i+1)+';', ' elapsed time (sec):', time.time()-start
         population[i].write_file_and_test_fitness()
     population.sort(key = lambda s: s.Fitness*-1)
     weights = list(reversed(range(1, len(population)+1)))
@@ -136,8 +146,9 @@ for gen in xrange(NGEN):
             cnew.shuffle()
             tmp_pop.append(cnew)
     new_population = tmp_pop
-    for i in range(4):
-        print gen, i, len(population), population[i].Fitness, population[i].chrom_list
+    print "generation="+str(gen+1), 'results:'
+    for i in range(len(population)):
+        print 'individual='+str(i+1), 'fitness='+str(population[i].Fitness), 'order=', population[i].output_scaff_order()
     population = new_population
 
 #found in 11 gen
