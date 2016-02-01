@@ -2,7 +2,7 @@ POP_SIZE = 10
 NGEN = 1000000000
 MUTATION = [0, 1, 2, 3]
 ELITE = 2
-
+print 'running population size='+str(POP_SIZE), ', for '+str(NGEN)+' generations, with mutation per generation='+str(MUTATION)+', and saving the best '+str(ELITE)+' individuals at from each generation'
 from fitness import fitness
 from common import sampler, weighted_sampler, get_file, defaultdict
 import os, sha, sys, re, random, copy, time
@@ -96,7 +96,7 @@ class ContigOrder:
     #
     def output_scaff_order(self):
         output = []
-        for i in chrom_list:
+        for i in self.chrom_list:
             s = scaff_lookup[abs(i)]
             if i < 0: strand = '-'
             else: strand = '+'
@@ -148,7 +148,7 @@ for gen in xrange(NGEN):
     new_population = tmp_pop
     print "generation="+str(gen+1), 'results:'
     for i in range(len(population)):
-        print 'individual='+str(i+1), 'fitness='+str(population[i].Fitness), 'order=', population[i].output_scaff_order()
+        print 'individual='+str(i+1), 'fitness='+str(population[i].Fitness), 'order=', ' '.join(population[i].output_scaff_order())
     population = new_population
 
 #found in 11 gen
