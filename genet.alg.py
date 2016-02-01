@@ -2,8 +2,10 @@ POP_SIZE = 10
 NGEN = 1000000000
 MUTATION = [0, 1, 2, 3]
 ELITE = 2
-print 'running population size='+str(POP_SIZE), ', for '+str(NGEN)+' generations, with mutation per generation='+str(MUTATION)+', and saving the best '+str(ELITE)+' individuals at from each generation'
-from fitness import fitness
+
+print 'running population size='+str(POP_SIZE), ', for '+str(NGEN)+' generations, with mutation per generation='+str(MUTATION)+', and saving the best '+str(ELITE)+' individuals from each generation'
+
+from fitness import fitness  #repackaging of John's likelihood calc. code
 from common import sampler, weighted_sampler, get_file, defaultdict
 import os, sha, sys, re, random, copy, time
 
@@ -64,6 +66,8 @@ for i in scaff_order:
 memo = {}
 
 class ContigOrder:
+    #made a class to handle scaffold order (oops, called it contig)
+    #the class stores one order, and has basic functions to track fitness, randomize order, and output
     def __init__(self, chrom_list, chrom_dict, scaff_lookup):
         self.chrom_list = [i for i in chrom_list]
         self.chrom_dict = {i:[j for j in chrom_dict[i]] for i in chrom_dict}
@@ -72,12 +76,20 @@ class ContigOrder:
         self.tag = sha.sha(str(self.chrom_list)).hexdigest()
     #
     def shuffle(self):
+        #use to scramble order
+        #c = ContigOrder(chrom_list, chrom_dict, scaff_lookup)
+        #c.shuffle()
+        #now c is randomized
         j = [i for i in self.chrom_list]
         random.shuffle(j)
         self.chrom_list = [i*random.choice([-1, 1]) for i in j]
         self.tag = sha.sha(str(self.chrom_list)).hexdigest()
     #
     def write_file_and_test_fitness(self):
+        #this writes a file, and calls JKK's fitness code and points it to the file
+        #and retrieves the lnL (aka fitness) and then cleans up the file
+        #also uses a cache ("memo") to check if the fitness has already been calculated for a particular order
+        #this saves on the expensive compute
         fnm = sha.sha(str(self.chrom_list)).hexdigest()
         self.tag = fnm
         if fnm in memo: self.Fitness = memo[fnm]
@@ -95,6 +107,7 @@ class ContigOrder:
             memo[fnm] = myfitness
     #
     def output_scaff_order(self):
+        #translate and print scaff order
         output = []
         for i in self.chrom_list:
             s = self.scaff_lookup[abs(i)]
@@ -106,7 +119,7 @@ class ContigOrder:
 
 
 c = ContigOrder(chrom_list, chrom_dict, scaff_lookup) 
-population = [copy.copy(c) for i in xrange(POP_SIZE)]
+population = [copy.copy(c) for i in xrange(POP_SIZE)]  #setting up the popualtion
 #print population[0].chrom_list
 #population[0].shuffle()
 #print population[0].chrom_list
@@ -125,19 +138,20 @@ for gen in xrange(NGEN):
         population[i].write_file_and_test_fitness()
     population.sort(key = lambda s: s.Fitness*-1)
     weights = list(reversed(range(1, len(population)+1)))
-    weight_dict = {i:weights[i] for i in range(len(population))} #use ranked based selection (see :http://www.obitko.com/tutorials/genetic-algorithms/selection.php)
-    new_population = population[:ELITE]
+    weight_dict = {i:weights[i] for i in range(len(population))} #using ranked based selection (see :http://www.obitko.com/tutorials/genetic-algorithms/selection.php)
+    new_population = population[:ELITE]#save the elites
     for i in range(ELITE, POP_SIZE):
         c1 = weighted_sampler(weight_dict)
         c2 = c1
         while c2 == c1:
             c2 = weighted_sampler(weight_dict)
-        cnew = swap_mutation(population[c1])
+        #c1 and c2 are the 2 indivduals to be recombined
+        cnew = swap_mutation(population[c1])# first mutate c1.  could do c2 too, but I didn't for now.  
         cnew = recombination(cnew, population[c2])
-        new_population.append(cnew)
+        new_population.append(cnew)#add this onto the next generation
     seen = []
     tmp_pop = []
-    for i in new_population:
+    for i in new_population: #occasionally identical orders get in, this removes duplicates and fills in with a new random order
         if i.tag not in seen:
             seen.append(i.tag)
             tmp_pop.append(i)
@@ -145,7 +159,7 @@ for gen in xrange(NGEN):
             cnew  = ContigOrder(chrom_list, chrom_dict, scaff_lookup)
             cnew.shuffle()
             tmp_pop.append(cnew)
-    new_population = tmp_pop
+    new_population = tmp_pop #lazy, but make the next generation from this temp, de-duplicated table
     print "generation="+str(gen+1), 'results:'
     for i in range(len(population)):
         print 'individual='+str(i+1), 'fitness='+str(population[i].Fitness), 'order=', ' '.join(population[i].output_scaff_order())
