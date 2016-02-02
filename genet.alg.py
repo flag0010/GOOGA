@@ -3,8 +3,9 @@ NGEN = 1000000000
 MUTATION = [0, 1, 2, 3]
 ELITE = 2
 
-print 'running population size='+str(POP_SIZE), ', for '+str(NGEN)+' generations, with mutation per generation='+str(MUTATION)+', and saving the best '+str(ELITE)+' individuals from each generation'
-
+print 
+print 'running population size='+str(POP_SIZE)+ ', for '+str(NGEN)+' generations\nwith mutation per generation='+str(MUTATION)+', and saving the best '+str(ELITE)+' individuals from each generation'
+print 
 from fitness import fitness  #repackaging of John's likelihood calc. code
 from common import sampler, weighted_sampler, get_file, defaultdict
 import os, sha, sys, re, random, copy, time
@@ -29,7 +30,7 @@ def recombination(contig_ord1, contig_ord2):
     #use order crossover (see: http://www.theprojectspot.com/tutorial-post/applying-a-genetic-algorithm-to-the-travelling-salesman-problem/5)
     parents = [[i for i in contig_ord1.chrom_list], [i for i in contig_ord2.chrom_list]]
     random.shuffle(parents)
-    contig_ord1, contig_ord2 = parents #just scramble which parent is donor, so p1 isn't always
+    contig_ord1, contig_ord2 = parents #just scramble which parent is donor, so p2 isn't always
     new = ['-' for i in contig_ord1]
     pos = range(len(new))
     a,b = sorted(sampler(pos, 2))
@@ -162,7 +163,9 @@ for gen in xrange(NGEN):
     new_population = tmp_pop #lazy, but make the next generation from this temp, de-duplicated table
     print "generation="+str(gen+1), 'results:'
     for i in range(len(population)):
-        print 'individual='+str(i+1), 'fitness='+str(population[i].Fitness), 'order=', ' '.join(population[i].output_scaff_order())
+        print 'individual='+str(i+1), 'fitness='+str(population[i].Fitness)
+        print '\t\t\tscaffold order=', ' '.join(population[i].output_scaff_order())
+        print '\t\t\traw list order=', population[i].chrom_list
     population = new_population
 
 #found in 11 gen
