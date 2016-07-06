@@ -1,8 +1,8 @@
-POP_SIZE = 6  #pop size
+POP_SIZE = 17  #pop size
 NGEN = 1000000000 #generations to run
 MUTATION = [0, 1, 2, 3]  #randomly select one value from this list to determine the number of mutations an indiv. pass on to next gen.
-ELITE = 2  #number best individuals to save at each generation
-NCPUs = 3 #number of cpus to run on.  Remember that after the 1st generation you will have POP_SIZE - ELITE novel indv
+ELITE = 3  #number best individuals to save at each generation
+NCPUs = 16 #number of cpus to run on.  Remember that after the 1st generation you will have POP_SIZE - ELITE novel indv
           #since we save past results, on a machine with 10 CPUs, if ELITE=2, you may want to do a popsize of 12, because that will max out all 10 CPUs after Gen 1 
 
 #import statements
@@ -54,11 +54,11 @@ def fill_in_rates_return_UGaps_and_new_R_rates(contig_ord, subset_memo, intra_sc
     else:
         xout.insert(0, 0.1)
     UGaps_out, R_rates_out = [pre_estimated,len(contig_ord)], xout
-    print 'subset_memo len and memo len'
-    print len(subset_memo), len(memo)
-    print "UGaps and R_rates"
-    print UGaps_out, R_rates_out
-    print '#########################################################################'
+    #print 'subset_memo len and memo len'
+    #print len(subset_memo), len(memo)
+    #print "UGaps and R_rates"
+    #print UGaps_out, R_rates_out
+    #print '#########################################################################'
     return UGaps_out, R_rates_out
 #####END##############################################################################
 
@@ -174,23 +174,31 @@ class ContigOrder:
                 if i < 0: output = list(reversed(output))
                 for j in output: b.write(scaff+'\t'+j+'\n')
             b.close()
-#            print self.tag
             myUGaps, my_R_rates = fill_in_rates_return_UGaps_and_new_R_rates(self.chrom_list, self.subset_memo)
-            #print 'run!'
-            #print self.chrom_list
-            #print self.Rates
-            #print self.UGaps
             rates_and_lnLk = fitness(fnm, my_R_rates, myUGaps)
-            #print rates_and_lnLk
-            #print subset_memo
-            #print memo
             rates = rates_and_lnLk[:-1]
             myfitness = rates_and_lnLk[-1]
             self.Fitness = myfitness
             self.Rates = rates
             os.remove(fnm)
-            #memo[fnm] = [myfitness, rates]
-            #update_subset_memo(self.chrom_list, self.Rates)
+#    
+    def write_file_and_test_fitness_full_model(self):
+        fnm = sha.sha(str(self.chrom_list)).hexdigest()
+        self.tag = fnm
+        b = open(fnm, 'w')
+        for i in self.chrom_list:
+            scaff = self.scaff_lookup[abs(i)]
+            output = self.chrom_dict[scaff]
+            if i < 0: output = list(reversed(output))
+            for j in output: b.write(scaff+'\t'+j+'\n')
+        b.close()
+        myUGaps, my_R_rates = [[], len(self.chrom_list)], [0.1 for i in range(len(chrom_list))]
+        rates_and_lnLk = fitness(fnm, my_R_rates, myUGaps)
+        rates = rates_and_lnLk[:-1]
+        myfitness = rates_and_lnLk[-1]
+        self.Fitness = myfitness
+        self.Rates = rates
+        os.remove(fnm)
     #
     def output_scaff_order(self):
         #translate and print scaff order
@@ -216,7 +224,12 @@ def functionalize_write_file_and_test_fitness(x):
     x.write_file_and_test_fitness()
     return x
 
+def functionalize_write_file_and_test_fitness_full_model(x):
+    x.write_file_and_test_fitness_full_model()
+    return x
+
 memo, subset_memo = {}, {}###THE FIRST MEMO TRACKS FULLY PRECOMPUTED CONTIG_ORDERS, WHEREAS THE SECOND "SUBSET_MEMO" TRACKS PARTIAL FRAGMENTS
+ELITES = set()
 
 if __name__ == '__main__':
     c = ContigOrder(chrom_list, chrom_dict, scaff_lookup, memo, subset_memo) 
@@ -232,13 +245,23 @@ if __name__ == '__main__':
         #    print "generation="+str(gen+1)+';', 'individual='+str(i+1)+';', ' elapsed time (sec):', time.time()-start
         #    population[i].write_file_and_test_fitness()
         print "generation="+str(gen+1)+';', 'elapsed time (sec):', time.time()-start
+        print 'time per generation', (gen+1)*(time.time()-start)**-1
         population.sort(key = lambda s: s.Fitness*-1)
         for i in population:
             update_subset_memo(i.chrom_list, i.Rates)
             memo[i.tag] = [i.Fitness, i.Rates]
         weights = list(reversed(range(1, len(population)+1)))
         weight_dict = {i:weights[i] for i in range(len(population))} #using ranked based selection (see :http://www.obitko.com/tutorials/genetic-algorithms/selection.php)
-        new_population = population[:ELITE]#save the elites
+        tmp_elite, done_elite = [], []
+        for i in population[:ELITE]:
+            if i.tag not in ELITES: tmp_elite.append(i)
+            else: done_elite.append(i)
+        if tmp_elite: 
+            for i in tmp_elite: ELITES.add(i.tag)
+            new_population = P.map(functionalize_write_file_and_test_fitness_full_model, tmp_elite)
+            for i in done_elite: new_population.append(i)
+        else:
+            new_population = population[:ELITE]
         for i in range(ELITE, POP_SIZE):
             c1 = weighted_sampler(weight_dict)
             c2 = c1
