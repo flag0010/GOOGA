@@ -166,8 +166,8 @@ class ContigOrder:
             #print 'hit:', fnm
             self.Fitness = self.memo[fnm][0]
             self.Rates = self.memo[fnm][1]
-            #update_subset_memo(self.chrom_list, self.Rates)
             self.runtime = time.time() - starttime
+            #update_subset_memo(self.chrom_list, self.Rates)
         else:  #we haven't tested this one yet
             b = open(fnm, 'w')
             for i in self.chrom_list:
@@ -257,16 +257,16 @@ if __name__ == '__main__':
             memo[i.tag] = [i.Fitness, i.Rates]
         weights = list(reversed(range(1, len(population)+1)))
         weight_dict = {i:weights[i] for i in range(len(population))} #using ranked based selection (see :http://www.obitko.com/tutorials/genetic-algorithms/selection.php)
-        tmp_elite, done_elite = [], []
-        for i in population[:ELITE]:
-            if i.tag not in ELITES: tmp_elite.append(i)
-            else: done_elite.append(i)
-        if tmp_elite: 
-            for i in tmp_elite: ELITES.add(i.tag)
-            new_population = P.map(functionalize_write_file_and_test_fitness_full_model, tmp_elite)
-            for i in done_elite: new_population.append(i)
-        else:
-            new_population = population[:ELITE]
+ #       tmp_elite, done_elite = [], []
+ #       for i in population[:ELITE]:
+ #           if i.tag not in ELITES: tmp_elite.append(i)
+ #           else: done_elite.append(i)
+ #       if tmp_elite: 
+ #           for i in tmp_elite: ELITES.add(i.tag)
+ #           new_population = P.map(functionalize_write_file_and_test_fitness_full_model, tmp_elite)
+ #           for i in done_elite: new_population.append(i)
+ #       else:
+        new_population = population[:ELITE]
         for i in range(ELITE, POP_SIZE):
             c1 = weighted_sampler(weight_dict)
             c2 = c1

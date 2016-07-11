@@ -175,7 +175,7 @@ class ContigOrder:
                 for j in output: b.write(scaff+'\t'+j+'\n')
             b.close()
 #            print self.tag
-            myUGaps, my_R_rates = fill_in_rates_return_UGaps_and_new_R_rates(self.chrom_list, self.subset_memo)
+            myUGaps, my_R_rates = fill_in_rates_return_UGaps_and_new_R_rates(self.chrom_list, self.subset_memo,  intra_scaff = 0.31)
             #print 'run!'
             #print self.chrom_list
             #print self.Rates
@@ -245,7 +245,7 @@ if __name__ == '__main__':
             TAG = i.tag
             loc_info['gen'] = gen
             carryover_info[TAG] = loc_info
-        dump(carryover_info, open('carryover.info.pickle', 'w'))
+        dump(carryover_info, open('intra-scaff.carryover.info.pickle', 'w'))
         weights = list(reversed(range(1, len(population)+1)))
         weight_dict = {i:weights[i] for i in range(len(population))} #using ranked based selection (see :http://www.obitko.com/tutorials/genetic-algorithms/selection.php)
         new_population = population[:ELITE]#save the elites

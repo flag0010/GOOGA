@@ -50,8 +50,8 @@ def fitness(filename, R_rates, UGaps,  lines_file = "test.f2group.txt", error_ra
 		#print val, d
 		ln_l = -final_scipy_ln_like0(solution)
 		solution.append(ln_l)
-		print filename, R_rates, UGaps
-		print 'function calls and iterations:', d['funcalls'], d['nit']
+		#print filename, R_rates, UGaps
+		#print 'function calls and iterations:', d['funcalls'], d['nit']
 		#zbob=ln_like0(parents,famStr,RRL,RAL,AAL,FLnum,1, list(best),matplant)
 		return solution
 	
