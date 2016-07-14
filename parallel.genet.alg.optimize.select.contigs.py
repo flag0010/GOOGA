@@ -1,8 +1,8 @@
-POP_SIZE = 15  #pop size
+POP_SIZE = 16  #pop size
 NGEN = 1000000000 #generations to run
 MUTATION = [0, 1, 2, 3]  #randomly select one value from this list to determine the number of mutations an indiv. pass on to next gen.
 ELITE = 3  #number best individuals to save at each generation
-TERMINATION = 2 #if the most fit line doesn't change for 100 generation, end the run
+TERMINATION = 100 #if the most fit line doesn't change for 100 generation, end the run
 NCPUs = 16 #number of cpus to run on.  Remember that after the 1st generation you will have POP_SIZE - ELITE novel indv
           #since we save past results, on a machine with 10 CPUs, if ELITE=2, you may want to do a popsize of 12, because that will max out all 10 CPUs after Gen 1 
 
@@ -42,24 +42,16 @@ def fill_in_rates_return_UGaps_and_new_R_rates(contig_ord, subset_memo, intra_sc
             for idx, scaff in enumerate(span[:-1]):
                 pos = lkp_pos[scaff]
                 if pos not in out: out[pos] = subset_memo[span][idx]
-    #print 'out', out
     xout = [0.01 for ii in range(len(contig_ord)-1)]
-    #need_to_estimate = sorted(set(range(len(contig_ord)-1)).difference(out.keys()))
     pre_estimated =[i+1 for i in sorted( out.keys() )]
     for i in out:
         xout[i] = out[i]
-    #print 'xout', xout
     if intra_scaff:
         xout.insert(0, intra_scaff)
         pre_estimated.insert(0,0)
     else:
         xout.insert(0, 0.1)
     UGaps_out, R_rates_out = [pre_estimated,len(contig_ord)], xout
-    #print 'subset_memo len and memo len'
-    #print len(subset_memo), len(memo)
-    #print "UGaps and R_rates"
-    #print UGaps_out, R_rates_out
-    #print '#########################################################################'
     return UGaps_out, R_rates_out
 #####END##############################################################################
 
@@ -118,8 +110,6 @@ for i in scaff_order:
     chrom_dict[i] = s
     scaff_lookup[idx] = i
     idx+=1
-#print chrom_list
-#print [scaff_lookup[abs(i)] for i in chrom_list]
 
 class ContigOrder:
     #made a class to handle scaffold order (oops, called it contig)
@@ -130,17 +120,12 @@ class ContigOrder:
         self.scaff_lookup = {i:scaff_lookup[i] for i in scaff_lookup}
         self.Fitness = -99999999
         self.tag = sha.sha(str(self.chrom_list)).hexdigest()
-        #print self.tag
         self.memo = {i:j for i,j in memo.items()}
         self.subset_memo = {i:j for i,j in subset_memo.items()}
         mygaps, myrates = fill_in_rates_return_UGaps_and_new_R_rates(self.chrom_list, self.subset_memo)
         self.Rates = myrates
         self.UGaps = mygaps
         self.runtime = 'NA'
-        #print 'init'
-        #print self.chrom_list
-        #print self.Rates
-        #print self.UGaps
     #
     def shuffle(self):
         #use to scramble order
@@ -162,12 +147,9 @@ class ContigOrder:
         starttime = time.time()
         fnm = sha.sha(str(self.chrom_list)).hexdigest()
         self.tag = fnm
-#        print 'running', self.chrom_list, self.tag
         if fnm in self.memo:
-            #print 'hit:', fnm
             self.Fitness = self.memo[fnm][0]
             self.Rates = self.memo[fnm][1]
-            #update_subset_memo(self.chrom_list, self.Rates)
             self.runtime = time.time() - starttime
         else:  #we haven't tested this one yet
             b = open(fnm, 'w')
@@ -187,6 +169,9 @@ class ContigOrder:
             self.runtime = time.time() - starttime
 #    
     def write_file_and_test_fitness_full_model(self):
+        #THIS VERSION DOES NOT CARRY OVER ANY RATES. INSTEAD IT RUNS FULL LIKELIHOOD MODEL
+        #USED ONLY ON CONTIG ORDERS THAT BREAK THEIR WAY INTO THE ELITE GROUP.
+        #I.E. WE BURN THE COMPUTES TO GET THE LIKELIHOOD REALY ACCURATE ONLY ON THE MOST PROMISING CONTIG ORDERS
         starttime = time.time()
         fnm = sha.sha(str(self.chrom_list)).hexdigest()
         self.tag = fnm
@@ -216,16 +201,6 @@ class ContigOrder:
             output.append(strand+s)
         return output
 
-#print population[0].chrom_list
-#population[0].shuffle()
-#print population[0].chrom_list
-#population[0].write_file_and_test_fitness()
-#print memo
-#print population[0].fitness  #it all works!
-
-
-#print [i.tag for i in population]
-
 def functionalize_write_file_and_test_fitness(x):
     x.write_file_and_test_fitness()
     return x
@@ -238,50 +213,60 @@ memo, subset_memo = {}, {}###THE FIRST MEMO TRACKS FULLY PRECOMPUTED CONTIG_ORDE
 ELITES = set()
 
 if __name__ == '__main__':
-    best_line = ''
-    termination_countdown = TERMINATION
-    c = ContigOrder(chrom_list, chrom_dict, scaff_lookup, memo, subset_memo) 
+#############INITIALIZE SOME STUFF BEFORE STARTING THE RUN FOR BOOKKEEPING PURPOSES#############################
+    best_line = '' #track best contig order for term. cond.
+    termination_countdown = TERMINATION #countdown set 
+    c = ContigOrder(chrom_list, chrom_dict, scaff_lookup, memo, subset_memo) #intialize 1st order from input
     population = [copy.copy(c) for i in xrange(POP_SIZE)]  #setting up the popualtion
     for i in range(1, POP_SIZE): #shuffle all but the first one, leave that at whatever is in the file (prob. v2 genome order)
         population[i].shuffle()  #randomize
     print '\nrunning population size='+str(POP_SIZE)+ ', for '+str(NGEN)+' generations\nwith mutation per generation='+str(MUTATION)+', and saving the best '+str(ELITE)+' individuals from each generation', '\non N='+str(NCPUs)+' CPUs' 
-    start  = time.time()
-    P = multiprocessing.Pool(NCPUs)
-    for gen in xrange(NGEN):
-        population = P.map(functionalize_write_file_and_test_fitness, population)
-        #for i in range(POP_SIZE):
-        #    print "generation="+str(gen+1)+';', 'individual='+str(i+1)+';', ' elapsed time (sec):', time.time()-start
-        #    population[i].write_file_and_test_fitness()
+    P = multiprocessing.Pool(NCPUs) #multicore initialized to NCPUs
+    start  = time.time() #print some stuff and start the clock
+################DONE INITIALIZING, START THE JOB##############################################################
+    for gen in xrange(NGEN):  #kick off the run
+        population = P.map(functionalize_write_file_and_test_fitness, population)  #here is the main runtime, mapping John's hmm onto contig orders
         print "generation="+str(gen+1)+';', 'elapsed time (sec):', time.time()-start
-        print 'seconds per generation', (time.time()-start)*(gen+1)**-1
-        population.sort(key = lambda s: s.Fitness*-1)
-        if population[0].tag == best_line: termination_countdown-=1
+        print 'seconds per generation', (time.time()-start)*(gen+1)**-1  #print some runtime stuff
+        population.sort(key = lambda s: s.Fitness*-1)  #sort to best order 1st
+#############KEEP TRACK OF TERM. CONDITIONS#################################################################
+        if population[0].tag == best_line: termination_countdown-=1  #update termination countdown
         else: termination_countdown = TERMINATION
-        best_line = population[0].tag
-        for i in population:
+        best_line = population[0].tag  #update best contig order
+#############KEEP TRACK OF LOCAL AND GLOBAL RATES SO WE CAN CARRY THESE OVER TO SAVE COMPUTATION#############
+        for i in population:  #update dicts that store local and global rates
             update_subset_memo(i.chrom_list, i.Rates)
             memo[i.tag] = [i.Fitness, i.Rates]
-        weights = list(reversed(range(1, len(population)+1)))
-        weight_dict = {i:weights[i] for i in range(len(population))} #using ranked based selection (see :http://www.obitko.com/tutorials/genetic-algorithms/selection.php)
+###########WE USE A WEIGHTING SCHEME CALLED RANK BASED SELECTION TO DECIDE WHO LIVES AND WHO DOESN'T############### 
+        weights = list(reversed(range(1, len(population)+1)))  #build weight dict
+        weight_dict = {i:weights[i] for i in range(len(population))} #using rank based selection (see :http://www.obitko.com/tutorials/genetic-algorithms/selection.php)
+#########NOW WE NEED TO SAVE OUR ELITE CONTIG ORDERS. THEY ARE GUARANTEED TO MAKE IT TO NEXT GENERATION##########
+#########THIS WAY WE NEVER BACK-SLIDE.  THE GA IS A ONE WAY RATCHET#############################################
         tmp_elite, done_elite = [], []
         for i in population[:ELITE]:
             if i.tag not in ELITES: tmp_elite.append(i)
             else: done_elite.append(i)
+########HERE'S A TRICKY BIT WHERE WE CATCH NEW ELITE LINES THAT HAVE NEVER HAD THEIR FULL LIKELIHOOD RUN################
+########WE RUN THE FULL MODEL ON THEM, CALCULATING VERY PRECISE LNLK AND STORE THIS#####################################
+########THIS TOO IS PARALELLIZED, BUT EACH TIME THIS IS RUN IT DOES SLOW DOWN THE RUN TIME TO RECOMPUTE PRECISE LNLK####
         if tmp_elite: 
             for i in tmp_elite: ELITES.add(i.tag)
             new_population = P.map(functionalize_write_file_and_test_fitness_full_model, tmp_elite)
             for i in done_elite: new_population.append(i)
         else:
             new_population = population[:ELITE]
+##########OK, NOW WE ARE DONE WITH ELITES, THEY ARE SAVED FOR NEXT GENERATION, NOW WE NEED TO FILL OUT REST OF POP#####
+#########WHICH WE DO BY RECOMBINING AND MUTATING LAST GENERATION, ALL BASED ON PAST PERFORMANCE (I.E. OUR RANK BASED WEIGHTS)
         for i in range(ELITE, POP_SIZE):
-            c1 = weighted_sampler(weight_dict)
+            c1 = weighted_sampler(weight_dict)#SELECT A ORDER BASED ON WEIGHTS, THIS IS PARENT #1
             c2 = c1
             while c2 == c1:
-                c2 = weighted_sampler(weight_dict)
+                c2 = weighted_sampler(weight_dict) #SELECT A SECOND ORDER, MAKING SURE IT'S DIFFERENT FROM THE FIRST
             #c1 and c2 are the 2 indivduals to be recombined
             cnew = swap_mutation(population[c1], memo, subset_memo)# first mutate c1.  could do c2 too, but I didn't for now.  
-            cnew = recombination(cnew, population[c2], memo, subset_memo)
+            cnew = recombination(cnew, population[c2], memo, subset_memo)#NOW RECOMBINE
             new_population.append(cnew)#add this onto the next generation
+###########FINALLY A LITTLE BOOK KEEPING TO CLEAR OUT DUPLICATE CONTIG ORDERS, WHICH ARE A WASTE OF CYCLES#################
         seen = []
         tmp_pop = []
         for i in new_population: #occasionally identical orders get in, this removes duplicates and fills in with a new random order
@@ -292,15 +277,18 @@ if __name__ == '__main__':
                 cnew  = ContigOrder(chrom_list, chrom_dict, scaff_lookup, memo, subset_memo)
                 cnew.shuffle()
                 tmp_pop.append(cnew)
+#########HERE IS THE FINALIZED NEW POP FOR NEXT GEN########################################################################
         new_population = tmp_pop #lazy, but make the next generation from this temp, de-duplicated table
+#########PRINT OUT SOME STATUS UPDATES FROM LAST GEN#####################################################################
         print "generation="+str(gen+1), 'results:'
         for i in range(len(population)):
             print 'individual='+str(i+1), 'fitness='+str(population[i].Fitness)
             print '\t\t\tscaffold order=', ' '.join(population[i].output_scaff_order())
             print '\t\t\traw list order=', population[i].chrom_list
             print '\t\t\trun time (sec)=', population[i].runtime
-        population = new_population
-        for i in population:
+        population = new_population  #CURRENT GEN NOW INCREMENTED
+        for i in population: #UPDATE ALL OUR STORES OF GLOBAL AND LOCAL RATES
             i.memo = {i:j for i,j in memo.items()}
             i.subset_memo = {i:j for i,j in subset_memo.items()}
-        if not termination_countdown: break
+###########FINALLY, CHECK IF WE HIT OUR TERMINATION CONDITION AND NEED TO STOP##########################################
+        if not termination_countdown: break 
