@@ -1,7 +1,8 @@
-POP_SIZE = 17  #pop size
+POP_SIZE = 15  #pop size
 NGEN = 1000000000 #generations to run
 MUTATION = [0, 1, 2, 3]  #randomly select one value from this list to determine the number of mutations an indiv. pass on to next gen.
 ELITE = 3  #number best individuals to save at each generation
+TERMINATION = 2 #if the most fit line doesn't change for 100 generation, end the run
 NCPUs = 16 #number of cpus to run on.  Remember that after the 1st generation you will have POP_SIZE - ELITE novel indv
           #since we save past results, on a machine with 10 CPUs, if ELITE=2, you may want to do a popsize of 12, because that will max out all 10 CPUs after Gen 1 
 
@@ -237,6 +238,8 @@ memo, subset_memo = {}, {}###THE FIRST MEMO TRACKS FULLY PRECOMPUTED CONTIG_ORDE
 ELITES = set()
 
 if __name__ == '__main__':
+    best_line = ''
+    termination_countdown = TERMINATION
     c = ContigOrder(chrom_list, chrom_dict, scaff_lookup, memo, subset_memo) 
     population = [copy.copy(c) for i in xrange(POP_SIZE)]  #setting up the popualtion
     for i in range(1, POP_SIZE): #shuffle all but the first one, leave that at whatever is in the file (prob. v2 genome order)
@@ -252,6 +255,9 @@ if __name__ == '__main__':
         print "generation="+str(gen+1)+';', 'elapsed time (sec):', time.time()-start
         print 'seconds per generation', (time.time()-start)*(gen+1)**-1
         population.sort(key = lambda s: s.Fitness*-1)
+        if population[0].tag == best_line: termination_countdown-=1
+        else: termination_countdown = TERMINATION
+        best_line = population[0].tag
         for i in population:
             update_subset_memo(i.chrom_list, i.Rates)
             memo[i.tag] = [i.Fitness, i.Rates]
@@ -297,3 +303,4 @@ if __name__ == '__main__':
         for i in population:
             i.memo = {i:j for i,j in memo.items()}
             i.subset_memo = {i:j for i,j in subset_memo.items()}
+        if not termination_countdown: break
