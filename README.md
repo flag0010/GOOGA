@@ -74,3 +74,5 @@ At some point it will stop, and you might want to run:
 `python run.stats.py some.output`
 
 This gives a plot of various run statistics so you can see how it progressed.  It gives some sense of whether you need to tune things or if it was pretty successful.
+
+You'll also want to check out the last generation of the output file.  This will contain the full likelihood of the best individual and the corresponding contig order.
