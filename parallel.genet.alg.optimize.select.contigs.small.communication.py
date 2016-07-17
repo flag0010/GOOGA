@@ -225,6 +225,10 @@ if __name__ == '__main__':
     start  = time.time() #print some stuff and start the clock
 ################DONE INITIALIZING, START THE JOB##############################################################
     for gen in xrange(NGEN):  #kick off the run
+############FIRST REDUCE THE SUBSET_MEMO DOWN TO JUST THOSE NEEDED FOR EACH LINE LOCALLY, THIS REDUCES COMMUNICATION BETWEEN PROCESSES A LOT##########
+        for i in population:
+            i.subset_memo = {ii:subset_memo[ii] for ii in greedy_slices(i.chrom_list) if ii in subset_memo}
+############NOW CALC LnLK#####################################################################################
         population = P.map(functionalize_write_file_and_test_fitness, population)  #here is the main runtime, mapping John's hmm onto contig orders
         print "generation="+str(gen+1)+';', 'elapsed time (sec):', time.time()-start
         print 'seconds per generation', (time.time()-start)*(gen+1)**-1  #print some runtime stuff
@@ -263,8 +267,8 @@ if __name__ == '__main__':
             while c2 == c1:
                 c2 = weighted_sampler(weight_dict) #SELECT A SECOND ORDER, MAKING SURE IT'S DIFFERENT FROM THE FIRST
             #c1 and c2 are the 2 indivduals to be recombined
-            cnew = swap_mutation(population[c1], memo, subset_memo)# first mutate c1.  could do c2 too, but I didn't for now.  
-            cnew = recombination(cnew, population[c2], memo, subset_memo)#NOW RECOMBINE
+            cnew = swap_mutation(population[c1], memo, {})# first mutate c1.  could do c2 too, but I didn't for now.  
+            cnew = recombination(cnew, population[c2], memo, {})#NOW RECOMBINE
             new_population.append(cnew)#add this onto the next generation
 ###########FINALLY A LITTLE BOOK KEEPING TO CLEAR OUT DUPLICATE CONTIG ORDERS, WHICH ARE A WASTE OF CYCLES#################
         seen = []
@@ -274,11 +278,14 @@ if __name__ == '__main__':
                 seen.append(i.tag)
                 tmp_pop.append(i)
             else:
-                cnew  = ContigOrder(chrom_list, chrom_dict, scaff_lookup, memo, subset_memo)
+                cnew  = ContigOrder(chrom_list, chrom_dict, scaff_lookup, memo, {})
                 cnew.shuffle()
                 tmp_pop.append(cnew)
 #########HERE IS THE FINALIZED NEW POP FOR NEXT GEN########################################################################
         new_population = tmp_pop #lazy, but make the next generation from this temp, de-duplicated table
+############Again REDUCE THE SUBSET_MEMO DOWN TO JUST THOSE NEEDED FOR EACH LINE LOCALLY, THIS REDUCES COMMUNICATION BETWEEN PROCESSES A LOT##########
+        for i in new_population:
+            i.subset_memo = {ii:subset_memo[ii] for ii in greedy_slices(i.chrom_list) if ii in subset_memo}
 #########PRINT OUT SOME STATUS UPDATES FROM LAST GEN#####################################################################
         print "generation="+str(gen+1), 'results:'
         for i in range(len(population)):
