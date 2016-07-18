@@ -65,7 +65,7 @@ Finally there is the per indiviudal mutation rate.  It's specified by the list g
 The final input file is a starting a genomic scaffold order.  THere's an example in markers.2.LM.txt.  The genetic algorithm uses this as a staring place.
 
 Then run the code:
-`python parallel.genet.alg.optimize.select.contigs.py markers.2.LM.txt > some.output.file`
+`python parallel.genet.alg.final.py markers.2.LM.txt > some.output.file`
 
 And at each generation it will output various run statistics, including all current scaffold orders and likelihoods that the algorithm is grinding away on.
 
