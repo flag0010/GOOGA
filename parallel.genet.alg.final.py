@@ -1,9 +1,9 @@
-POP_SIZE = 17  #pop size
+POP_SIZE = 24  #pop size
 NGEN = 1000000000 #generations to run
 MUTATION = [0, 1, 2, 3]  #randomly select one value from this list to determine the number of mutations an indiv. pass on to next gen.
 ELITE = 3  #number best individuals to save at each generation
 TERMINATION = 1000 #if the most fit line doesn't change for 100 generation, end the run
-NCPUs = 16 #number of cpus to run on.  Remember that after the 1st generation you will have POP_SIZE - ELITE novel indv
+NCPUs = 27 #number of cpus to run on.  Remember that after the 1st generation you will have POP_SIZE - ELITE novel indv
           #since we save past results, on a machine with 10 CPUs, if ELITE=2, you may want to do a popsize of 12, because that will max out all 10 CPUs after Gen 1 
 
 #import statements
