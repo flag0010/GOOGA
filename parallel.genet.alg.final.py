@@ -1,9 +1,9 @@
-POP_SIZE = 24  #pop size
+POP_SIZE = 27  #pop size
 NGEN = 1000000000 #generations to run
-MUTATION = [0, 1, 2, 3]  #randomly select one value from this list to determine the number of mutations an indiv. pass on to next gen.
+MUTATION = [0, 1, 2, 3, 4]  #randomly select one value from this list to determine the number of mutations an indiv. pass on to next gen.
 ELITE = 3  #number best individuals to save at each generation
 TERMINATION = 1000 #if the most fit line doesn't change for 100 generation, end the run
-NCPUs = 27 #number of cpus to run on.  Remember that after the 1st generation you will have POP_SIZE - ELITE novel indv
+NCPUs = 24 #number of cpus to run on.  Remember that after the 1st generation you will have POP_SIZE - ELITE novel indv
           #since we save past results, on a machine with 10 CPUs, if ELITE=2, you may want to do a popsize of 12, because that will max out all 10 CPUs after Gen 1 
 
 #import statements
@@ -50,7 +50,7 @@ def fill_in_rates_return_UGaps_and_new_R_rates(contig_ord, subset_memo, intra_sc
         xout.insert(0, intra_scaff)
         pre_estimated.insert(0,0)
     else:
-        xout.insert(0, 0.1)
+        xout.insert(0, 0.01)
     UGaps_out, R_rates_out = [pre_estimated,len(contig_ord)], xout
     return UGaps_out, R_rates_out
 #####END##############################################################################
@@ -182,7 +182,7 @@ class ContigOrder:
             if i < 0: output = list(reversed(output))
             for j in output: b.write(scaff+'\t'+j+'\n')
         b.close()
-        myUGaps, my_R_rates = [[], len(self.chrom_list)], [0.1 for i in range(len(chrom_list))]
+        myUGaps, my_R_rates = [[], len(self.chrom_list)], [0.01 for i in range(len(chrom_list))]
         rates_and_lnLk = fitness(fnm, my_R_rates, myUGaps)
         rates = rates_and_lnLk[:-1]
         myfitness = rates_and_lnLk[-1]

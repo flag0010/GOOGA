@@ -38,12 +38,12 @@ def fitness(filename, R_rates, UGaps,  lines_file = "test.f2group.txt", error_ra
 			return -LL_without_global_tweaking(x)
 		#recombination rate = max*(10.0**-x)
 	
-		bounds = [(0.0,10.0)] # different calculation for intra-scaff rates (per bp)
+		bounds = [(0.0,1.0)] # different calculation for intra-scaff rates (per bp)
 		for k in range(1,len(r_rates)):
 			bounds.append( (0.00000001,0.5) )
 		#print r_rates
 		#print UGaps
-		best, val, d = optimize.fmin_l_bfgs_b(scipy_ln_like0, r_rates, factr=prci, epsilon=gradval, approx_grad=True, bounds=bounds)
+		best, val, d = optimize.fmin_l_bfgs_b(scipy_ln_like0, r_rates, factr=1e12, approx_grad=True, bounds=bounds)
 		#print d
 		solution = list(best)
 		#print solution
@@ -140,7 +140,8 @@ def fitness(filename, R_rates, UGaps,  lines_file = "test.f2group.txt", error_ra
 				bsum+=1
 				r = x[bsum]  # This is inter-scaff rate for this position: bsum = number of v1 scaffs into LG 
 			else:
-				r = float(distX[x1])*maxrbp*(10.0**-x[0]) # intra-scaff rates depend only on x[0] and physical distance between markers
+				r = float(distX[x1])*maxrbp*(10.0**(-10*x[0]))
+                                #r = float(distX[x1])*maxrbp*(10.0**-x[0]) # intra-scaff rates depend only on x[0] and physical distance between markers
 	
 			transition_probability[x1] ={'AA' : {'AA':(1-r)**2.0,'AB':2*r*(1-r),'BB':r**2.0}, 'AB' : {'AA':r*(1-r),'AB':(1-r)**2.0 + r**2.0,'BB':r*(1-r)}, 'BB' : {'AA':r**2.0,'AB':2*r*(1-r),'BB':(1-r)**2.0} }
 	
@@ -165,7 +166,8 @@ def fitness(filename, R_rates, UGaps,  lines_file = "test.f2group.txt", error_ra
 				bsum+=1
 				r = x[bsum]  # This is inter-scaff rate for this position: bsum = number of v1 scaffs into LG 
 			else:
-				r = float(distX[x1])*maxrbp*(10.0**-x[0]) # intra-scaff rates depend only on x[0] and physical distance between markers
+				r = float(distX[x1])*maxrbp*(10.0**(-10*x[0]))
+                                #r = float(distX[x1])*maxrbp*(10.0**-x[0]) # intra-scaff rates depend only on x[0] and physical distance between markers
 	
 			transition_probability[x1] ={'AA' : {'AA':(1-r)**2.0,'AB':2*r*(1-r),'BB':r**2.0}, 'AB' : {'AA':r*(1-r),'AB':(1-r)**2.0 + r**2.0,'BB':r*(1-r)}, 'BB' : {'AA':r**2.0,'AB':2*r*(1-r),'BB':(1-r)**2.0} }
 	
