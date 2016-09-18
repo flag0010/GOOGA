@@ -29,7 +29,13 @@ def yield_N(x, n):
     return k
 
 x = get_file(sys.argv[1])
+ch_num = sys.argv[1].split('.')[0].replace('chrom', '')
+marker_file = get_file('markers.'+ch_num+'.LM.txt', '\t')
+scaff_num = len(set([i[0] for i in marker_file]))
+#print scaff_num, set([i[0] for i in marker_file])
 #for i in x: print i
+start_lk = float(x[7][-1].split('=')[-1])
+#print start_lk, x[7][-1]
 etime = [i for i in x if 'elapsed' in i]
 gen = [int(i[0].replace('generation=', '').replace(';', '')) for i in etime]
 sec_cum = [float(i[-1]) for i in etime]
@@ -62,9 +68,9 @@ plt.subplot(3,1,1)
 plt.plot(gen, sec_per)
 
 plt.ylabel('per generation runtime (sec)')
-plt.plot(range(1, len(mv_ave)+1), mv_ave, color='r')
+plt.plot(range(1, len(mv_ave)+1), mv_ave, color='r', alpha=.6)
 
-plt.plot(worst_pos, worst_per_gen, color='g')
+plt.plot(worst_pos, worst_per_gen, color='g', alpha=.6)
 
 
 elite_line = [i for i in x if 'saving' in i][0]
@@ -103,4 +109,5 @@ plt.plot(gen, best)
 #print best
 plt.ylabel('fitness of best order (lnLk)')
 plt.show()
-print max(best)
+#print max(best)
+print start_lk, max(best), max(best)-start_lk, max(gen), sum(sec_per)*len(sec_per)**-1, scaff_num

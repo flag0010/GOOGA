@@ -7,7 +7,7 @@ NCPUs = 24 #number of cpus to run on.  Remember that after the 1st generation yo
           #since we save past results, on a machine with 10 CPUs, if ELITE=2, you may want to do a popsize of 12, because that will max out all 10 CPUs after Gen 1 
 
 #import statements
-from fitness_optimize_select_contigs import fitness ##repackaging of John's likelihood calc. code
+from fitness_fixed_intra_scaff_and_optimize_select_contigs import fitness ##repackaging of John's likelihood calc. code
 from common import sampler, weighted_sampler, get_file, defaultdict
 import os, sha, sys, re, random, copy, time, multiprocessing
 
