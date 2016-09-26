@@ -194,7 +194,7 @@ class ContigOrder:
             if i < 0: output = list(reversed(output))
             for j in output: b.write(scaff+'\t'+j+'\n')
         b.close()
-        myUGaps, my_R_rates = [[], len(self.chrom_list)-1], [0.01 for i in range(len(chrom_list))]
+        myUGaps, my_R_rates = [[], len(self.chrom_list)-1], [0.01 for i in range(len(chrom_list)-1)]
         rates_and_lnLk = fitness(fnm, my_R_rates, myUGaps,
                                      lines_file = f2_file,
                                      error_rates = error_file,
@@ -276,7 +276,11 @@ if __name__ == '__main__':
             new_population = population[:ELITE]
 ##########OK, NOW WE ARE DONE WITH ELITES, THEY ARE SAVED FOR NEXT GENERATION, NOW WE NEED TO FILL OUT REST OF POP#####
 #########WHICH WE DO BY RECOMBINING AND MUTATING LAST GENERATION, ALL BASED ON PAST PERFORMANCE (I.E. OUR RANK BASED WEIGHTS)
-        auto_pop_size = NCPUs+len([1 for i in population if i.tag in memo])
+        auto_pop_size = NCPUs+ELITE
+        #print [i.tag for i in population]
+        #print memo
+        #print NCPUs, len([1 for i in population if i.tag in memo])
+        #print range(ELITE, auto_pop_size)
         for i in range(ELITE, auto_pop_size):
             c1 = weighted_sampler(weight_dict)#SELECT A ORDER BASED ON WEIGHTS, THIS IS PARENT #1
             c2 = c1
