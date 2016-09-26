@@ -51,7 +51,24 @@ def foward_backward(obs, states, start_p,transition_probability,er):
 	# Likelihood of observed states
 	LLobs=lnFactor+log(alpha[len(obs)-1]['AA']+alpha[len(obs)-1]['AB']+alpha[len(obs)-1]['BB'])
 
+	#beta=[{} for j in range(len(obs))] # backward:: beta[j][X] is probability that true genotye is X at marker j (starts at 0)
+	#for y in states:
+	#	beta[len(obs)-1][y] = 1.0 #start_p[y]
 
+	#for t in xrange(len(obs)-2,-1,-1):
+		#beta.append({})
+        #	for y in states:
+	#		beta[t][y] = 0.0 # y is state at t
+	#		for y0 in states: # y0 is state at t+1
+	#			beta[t][y] +=beta[t+1][y0] * transition_probability[t][y][y0] * emission_probability(y0,obs[t+1],er)
+
+	#	normalizer = max(beta[t]['AA'],beta[t]['AB'],beta[t]['BB'])
+        #	for y in states:
+	#		beta[t][y] = beta[t][y]/normalizer
+	#print alpha
+	#print beta
+
+	#return alpha,beta,LLobs
 	return LLobs
 
 def emission_probability(genotype,calledG,ER): # cc [ AA,AB,BB,NN ] 
@@ -129,7 +146,7 @@ start_probability = {'AA':0.25,'AB':0.5,'BB':0.25}
 
 
 Error_Rates={}
-inZ = open("bb.error.rates.txt","rU")
+inZ = open("LVR.er2.txt","rU")
 for line_idx, line in enumerate(inZ):
 	cols = line.replace('\n', '').split(' ') 
 #imswc001 482 0.0608584706859 1e-05 0.0180081186063 -159.05915623
@@ -137,7 +154,7 @@ for line_idx, line in enumerate(inZ):
 
 
 #any valid genotype file
-inK=open("g.imswc329.txt","rU")
+inK=open("g.F2.250.txt","rU")
 v1contig={}
 for line_idx, line in enumerate(inK):
 	cols = line.replace('\n', '').split('\t') 
@@ -150,7 +167,7 @@ for line_idx, line in enumerate(inK):
 	# F2.250	1	100000	AB
 
 
-out1 = open("MLE.iscaff.bb.txt","w")
+out1 = open("MLE.iscaff.LVR2.txt","w")
 
 for vcx in v1contig:
 
@@ -167,7 +184,7 @@ for vcx in v1contig:
 		obsA={}
 		f2plants=[]
 
-		srx  =open("test.f2group.txt", "rU")
+		srx  =open("LVR.f2set.txt", "rU")
 		for line_idx, line in enumerate(srx):
 			colx = line.replace('\n', '').split('\t') 
 			plantID=colx[0]

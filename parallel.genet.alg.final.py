@@ -1,16 +1,30 @@
-POP_SIZE = 27  #pop size
-NGEN = 1000000000 #generations to run
-MUTATION = [0, 1, 2, 3, 4]  #randomly select one value from this list to determine the number of mutations an indiv. pass on to next gen.
-ELITE = 3  #number best individuals to save at each generation
-TERMINATION = 1000 #if the most fit line doesn't change for 100 generation, end the run
-NCPUs = 24 #number of cpus to run on.  Remember that after the 1st generation you will have POP_SIZE - ELITE novel indv
-          #since we save past results, on a machine with 10 CPUs, if ELITE=2, you may want to do a popsize of 12, because that will max out all 10 CPUs after Gen 1 
-
-#import statements
+#import a bunch of stuff
 from fitness_fixed_intra_scaff_and_optimize_select_contigs import fitness ##repackaging of John's likelihood calc. code
 from common import sampler, weighted_sampler, get_file, defaultdict
 import os, sha, sys, re, random, copy, time, multiprocessing
+from optparse import OptionParser
 
+#input options.  as ever, to see usage run: "python parallel.genet.alg.final.py -h"
+#NOTE: all options beside the marker chromosome specific file have defaults
+parser = OptionParser(usage='usage: %prog marker_file [options]')
+parser.add_option('-e', action='store', dest='error_file', default = "error.rates.txt", help='File with precaculated error rates - default=error.rates.txt')
+parser.add_option('-f', action="store", dest="f2_file", default = "test.f2group.txt", help='File with F2s to use in analysis - default=test.f2group.txt')
+parser.add_option('-i', action="store", dest="intrascaff_rates_file", default = "intrascaff_rates.txt", help='File with precalculated intra-scaffold recombination rates - default=intrascaff_rates.txt')
+parser.add_option('-c', action="store", dest="NCPU", default = 16, help='Number of CPUs - default=16', type='int')
+parser.add_option('-g', action="store", dest="NGEN", default = 10000000000, type=int, help='Number of generations to run the GA - default=10^10')
+parser.add_option('-l', action='store', dest='ELITE', default=3, type=int, help = 'Number of elite in each generation default=3')
+parser.add_option('-t', action='store', dest='TERMINATION', default=1000, type=int, help='Number of generations with no improvement before termination - default=1000' )
+my_args = parser.parse_args()[0]
+
+#below options can be modified at command line
+NGEN = my_args.NGEN #generations to run
+NCPUs = my_args.NCPU #number of cpus to run on. 
+ELITE = my_args.ELITE  #number best individuals to save at each generation
+TERMINATION = my_args.TERMINATION #if the most fit line doesn't change for TERMINATION generation, end the run
+#print my_args
+
+#mutation option cannot be modified at the command line
+MUTATION = [0, 1, 2, 3, 4]  #randomly select one value from this list to determine the number of mutations an indiv. pass on to next gen.
 
 ### FUNCTIONS FOR TRACKING REC. RATES AND RECYCLING PREV. ESTIMATED VALUES GREEDILY##########
 def greedy_slices(x):
@@ -29,12 +43,12 @@ def greedy_slices(x):
 def update_subset_memo(contig_ord, r_rates):
     def flip_scaff_ord(s):
         return tuple([i*-1 for i in reversed(s)])    
-    for i,j in zip(*map(greedy_slices, [contig_ord,r_rates[1:]])):
+    for i,j in zip(*map(greedy_slices, [contig_ord,r_rates])):
         if i not in subset_memo: subset_memo[i] = j
         flip_i = flip_scaff_ord(i)
         if flip_i not in subset_memo: subset_memo[flip_i] = tuple(reversed(j))
 
-def fill_in_rates_return_UGaps_and_new_R_rates(contig_ord, subset_memo, intra_scaff = False):
+def fill_in_rates_return_UGaps_and_new_R_rates(contig_ord, subset_memo):
     out = {}
     lkp_pos = {i:idx for idx, i in enumerate(contig_ord)}
     for span in greedy_slices(contig_ord):
@@ -43,15 +57,10 @@ def fill_in_rates_return_UGaps_and_new_R_rates(contig_ord, subset_memo, intra_sc
                 pos = lkp_pos[scaff]
                 if pos not in out: out[pos] = subset_memo[span][idx]
     xout = [0.01 for ii in range(len(contig_ord)-1)]
-    pre_estimated =[i+1 for i in sorted( out.keys() )]
+    pre_estimated = sorted(out.keys())
     for i in out:
         xout[i] = out[i]
-    if intra_scaff:
-        xout.insert(0, intra_scaff)
-        pre_estimated.insert(0,0)
-    else:
-        xout.insert(0, 0.01)
-    UGaps_out, R_rates_out = [pre_estimated,len(contig_ord)], xout
+    UGaps_out, R_rates_out = [pre_estimated,len(xout)], xout
     return UGaps_out, R_rates_out
 #####END##############################################################################
 
@@ -137,7 +146,7 @@ class ContigOrder:
         self.chrom_list = [i*random.choice([-1, 1]) for i in j]
         self.tag = sha.sha(str(self.chrom_list)).hexdigest()
     #
-    def write_file_and_test_fitness(self):
+    def write_file_and_test_fitness(self, error_file, intrascaff_file, f2_file):
         #this writes a file, and calls JKK's fitness code and points it to the file
         #and retrieves the lnL (aka fitness) and then cleans up the file
         #also uses a cache ("memo") to check if the fitness has already been calculated for a particular order
@@ -160,7 +169,10 @@ class ContigOrder:
                 for j in output: b.write(scaff+'\t'+j+'\n')
             b.close()
             myUGaps, my_R_rates = fill_in_rates_return_UGaps_and_new_R_rates(self.chrom_list, self.subset_memo)
-            rates_and_lnLk = fitness(fnm, my_R_rates, myUGaps)
+            rates_and_lnLk = fitness(fnm, my_R_rates, myUGaps,
+                                     lines_file = f2_file,
+                                     error_rates = error_file,
+                                     intra_scaff_rates_file=intrascaff_file)
             rates = rates_and_lnLk[:-1]
             myfitness = rates_and_lnLk[-1]
             self.Fitness = myfitness
@@ -168,7 +180,7 @@ class ContigOrder:
             os.remove(fnm)
             self.runtime = time.time() - starttime
 #    
-    def write_file_and_test_fitness_full_model(self):
+    def write_file_and_test_fitness_full_model(self, error_file, intrascaff_file, f2_file):
         #THIS VERSION DOES NOT CARRY OVER ANY RATES. INSTEAD IT RUNS FULL LIKELIHOOD MODEL
         #USED ONLY ON CONTIG ORDERS THAT BREAK THEIR WAY INTO THE ELITE GROUP.
         #I.E. WE BURN THE COMPUTES TO GET THE LIKELIHOOD REALY ACCURATE ONLY ON THE MOST PROMISING CONTIG ORDERS
@@ -182,8 +194,11 @@ class ContigOrder:
             if i < 0: output = list(reversed(output))
             for j in output: b.write(scaff+'\t'+j+'\n')
         b.close()
-        myUGaps, my_R_rates = [[], len(self.chrom_list)], [0.01 for i in range(len(chrom_list))]
-        rates_and_lnLk = fitness(fnm, my_R_rates, myUGaps)
+        myUGaps, my_R_rates = [[], len(self.chrom_list)-1], [0.01 for i in range(len(chrom_list))]
+        rates_and_lnLk = fitness(fnm, my_R_rates, myUGaps,
+                                     lines_file = f2_file,
+                                     error_rates = error_file,
+                                     intra_scaff_rates_file=intrascaff_file)
         rates = rates_and_lnLk[:-1]
         myfitness = rates_and_lnLk[-1]
         self.Fitness = myfitness
@@ -201,12 +216,12 @@ class ContigOrder:
             output.append(strand+s)
         return output
 
-def functionalize_write_file_and_test_fitness(x):
-    x.write_file_and_test_fitness()
+def functionalize_write_file_and_test_fitness(x, error_file=my_args.error_file, intrascaff_file=my_args.intrascaff_rates_file, f2_file=my_args.f2_file):
+    x.write_file_and_test_fitness(error_file, intrascaff_file, f2_file)
     return x
 
-def functionalize_write_file_and_test_fitness_full_model(x):
-    x.write_file_and_test_fitness_full_model()
+def functionalize_write_file_and_test_fitness_full_model(x, error_file=my_args.error_file, intrascaff_file=my_args.intrascaff_rates_file, f2_file=my_args.f2_file):
+    x.write_file_and_test_fitness_full_model(error_file, intrascaff_file, f2_file)
     return x
 
 memo, subset_memo = {}, {}###THE FIRST MEMO TRACKS FULLY PRECOMPUTED CONTIG_ORDERS, WHEREAS THE SECOND "SUBSET_MEMO" TRACKS PARTIAL FRAGMENTS
@@ -217,10 +232,10 @@ if __name__ == '__main__':
     best_line = '' #track best contig order for term. cond.
     termination_countdown = TERMINATION #countdown set 
     c = ContigOrder(chrom_list, chrom_dict, scaff_lookup, memo, subset_memo) #intialize 1st order from input
-    population = [copy.copy(c) for i in xrange(POP_SIZE)]  #setting up the popualtion
-    for i in range(1, POP_SIZE): #shuffle all but the first one, leave that at whatever is in the file (prob. v2 genome order)
+    population = [copy.copy(c) for i in xrange(NCPUs)]  #setting up the popualtion
+    for i in range(1, len(population)): #shuffle all but the first one, leave that at whatever is in the file (prob. v2 genome order)
         population[i].shuffle()  #randomize
-    print '\nrunning population size='+str(POP_SIZE)+ ', for '+str(NGEN)+' generations\nwith mutation per generation='+str(MUTATION)+', and saving the best '+str(ELITE)+' individuals from each generation', '\non N='+str(NCPUs)+' CPUs' 
+    print '\nrunning for '+str(NGEN)+' generations\nwith mutation per generation='+str(MUTATION)+', and saving the best '+str(ELITE)+' individuals from each generation', '\non N='+str(NCPUs)+' CPUs' 
     P = multiprocessing.Pool(NCPUs) #multicore initialized to NCPUs
     start  = time.time() #print some stuff and start the clock
 ################DONE INITIALIZING, START THE JOB##############################################################
@@ -261,7 +276,8 @@ if __name__ == '__main__':
             new_population = population[:ELITE]
 ##########OK, NOW WE ARE DONE WITH ELITES, THEY ARE SAVED FOR NEXT GENERATION, NOW WE NEED TO FILL OUT REST OF POP#####
 #########WHICH WE DO BY RECOMBINING AND MUTATING LAST GENERATION, ALL BASED ON PAST PERFORMANCE (I.E. OUR RANK BASED WEIGHTS)
-        for i in range(ELITE, POP_SIZE):
+        auto_pop_size = NCPUs+len([1 for i in population if i.tag in memo])
+        for i in range(ELITE, auto_pop_size):
             c1 = weighted_sampler(weight_dict)#SELECT A ORDER BASED ON WEIGHTS, THIS IS PARENT #1
             c2 = c1
             while c2 == c1:
@@ -287,7 +303,7 @@ if __name__ == '__main__':
         for i in new_population:
             i.subset_memo = {ii:subset_memo[ii] for ii in greedy_slices(i.chrom_list) if ii in subset_memo}
 #########PRINT OUT SOME STATUS UPDATES FROM LAST GEN#####################################################################
-        print "generation="+str(gen+1), 'results:'
+        print "generation="+str(gen+1), 'with pop size:'+str(len(population))
         for i in range(len(population)):
             print 'individual='+str(i+1), 'fitness='+str(population[i].Fitness)
             print '\t\t\tscaffold order=', ' '.join(population[i].output_scaff_order())
