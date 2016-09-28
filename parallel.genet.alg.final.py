@@ -240,10 +240,7 @@ if __name__ == '__main__':
     start  = time.time() #print some stuff and start the clock
 ################DONE INITIALIZING, START THE JOB##############################################################
     for gen in xrange(NGEN):  #kick off the run
-############FIRST REDUCE THE SUBSET_MEMO DOWN TO JUST THOSE NEEDED FOR EACH LINE LOCALLY, THIS REDUCES COMMUNICATION BETWEEN PROCESSES A LOT##########
-        for i in population:
-            i.subset_memo = {ii:subset_memo[ii] for ii in greedy_slices(i.chrom_list) if ii in subset_memo}
-############NOW CALC LnLK#####################################################################################
+############CALC LnLK#####################################################################################
         population = P.map(functionalize_write_file_and_test_fitness, population)  #here is the main runtime, mapping John's hmm onto contig orders
         print "generation="+str(gen+1)+';', 'elapsed time (sec):', time.time()-start
         print 'seconds per generation', (time.time()-start)*(gen+1)**-1  #print some runtime stuff
@@ -306,6 +303,9 @@ if __name__ == '__main__':
 ############Again REDUCE THE SUBSET_MEMO DOWN TO JUST THOSE NEEDED FOR EACH LINE LOCALLY, THIS REDUCES COMMUNICATION BETWEEN PROCESSES A LOT##########
         for i in new_population:
             i.subset_memo = {ii:subset_memo[ii] for ii in greedy_slices(i.chrom_list) if ii in subset_memo}
+            if i.tag in memo:
+                i.memo = {i.tag:memo[i.tag]}
+            else: i.memo = {}
 #########PRINT OUT SOME STATUS UPDATES FROM LAST GEN#####################################################################
         print "generation="+str(gen+1), 'with pop size:'+str(len(population))
         for i in range(len(population)):
@@ -314,8 +314,9 @@ if __name__ == '__main__':
             print '\t\t\traw list order=', population[i].chrom_list
             print '\t\t\trun time (sec)=', population[i].runtime
         population = new_population  #CURRENT GEN NOW INCREMENTED
-        for i in population: #UPDATE ALL OUR STORES OF GLOBAL AND LOCAL RATES
-            i.memo = {i:j for i,j in memo.items()}
-            i.subset_memo = {i:j for i,j in subset_memo.items()}
+##i believe 3 lines below were the bug that slowed down the GA overtime
+#        for i in population: #UPDATE ALL OUR STORES OF GLOBAL AND LOCAL RATES
+#            i.memo = {i:j for i,j in memo.items()}
+#            i.subset_memo = {i:j for i,j in subset_memo.items()}
 ###########FINALLY, CHECK IF WE HIT OUR TERMINATION CONDITION AND NEED TO STOP##########################################
         if not termination_countdown: break 
