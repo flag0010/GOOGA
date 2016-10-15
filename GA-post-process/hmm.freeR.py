@@ -8,10 +8,13 @@ from scipy import optimize
 from scipy.optimize import minimize_scalar
 from scipy.special import gammaln
 from math import exp,log
-import sys
+import sys, os, common
 
-MarkerOrder=sys.argv[1]
 
+GAOutFile=sys.argv[1]
+MarkerInit = sys.argv[2]
+F2file = sys.argv[3]
+Errorfile = sys.argv[4]
 #genotyping error probs
 zy=0.00001 # edge for bounds
 
@@ -19,7 +22,7 @@ def calc_v0(r_rates):
 	def scipy_ln_like0(x):
 		return -LL(x)
 
-	bounds = [ (0.0,0.1) for k in range(len(r_rates)) ]
+	bounds = [ (0.0,0.25) for k in range(len(r_rates)) ]
 	best, val, d = optimize.fmin_l_bfgs_b(scipy_ln_like0, r_rates, approx_grad=True, bounds=bounds)
 	solution = list(best)
 	ln_l = -scipy_ln_like0(solution)
@@ -90,7 +93,7 @@ def emission_probability(genotype,calledG,ER): # cc [ AA,AB,BB,NN ]
  
 def LL(x):
 
-
+	print x
 	# transition probs a global
 	transition_probability=[{} for j in xrange(len(x))] # global that is updated within LL(x)
 	for x1 in xrange(len(x)): # recom rates
@@ -118,15 +121,22 @@ start_probability = {'AA':0.25,'AB':0.5,'BB':0.25}
 
 
 Error_Rates={}
-inZ = open("bb.error.rates.txt","rU")
+inZ = open(Errorfile,"rU")
 for line_idx, line in enumerate(inZ):
-	cols = line.replace('\n', '').split('\t') 
+	cols = line.replace('\n', '').split() 
 #imswc001 482 0.0608584706859 1e-05 0.0180081186063 -159.05915623
 	Error_Rates[cols[0]]=[float(cols[2]),float(cols[3]),float(cols[4])]
 
 
+Qi =  common.get_file(GAOutFile, 'adfadfa')
+
+xx = [idx for idx, i in enumerate(Qi) if 'individual=1' in i[0]]
+#print xx
+final =  Qi[xx[-1]+2][0].replace('raw list order= ', '')
+os.popen('python make.new.input.file.from.winning.order.py '+MarkerInit+' '+'"'+final+'" > better.'+ MarkerInit)
+
 Position={}
-inY = open(MarkerOrder,"rU")
+inY = open('better.'+ MarkerInit,"rU")
 TotalMarkers=0
 for line_idx, line in enumerate(inY):
 	cols = line.replace('\n', '').split('\t') 
@@ -138,7 +148,7 @@ R_rates=[0.01 for j in range(TotalMarkers-1)] # recomb rates to be estimated
 obsA={}
 f2plants=[]
 
-srx  =open("mse.group.txt", "rU")
+srx  =open(F2file, "rU")
 for line_idx, line in enumerate(srx):
 	colx = line.replace('\n', '').split('\t') 
 	plantID=colx[0]
@@ -165,6 +175,7 @@ out1 = open("MLE.free."+MarkerOrder,"w")
 for j in range(len(zsol)):
 	out1.write(str(zsol[j])+'\n')
 print zsol
+
 
 
 
