@@ -171,7 +171,7 @@ for line_idx, line in enumerate(srx):
 
 zsol= calc_v0(R_rates) 
 
-out1 = open("MLE.free."+MarkerOrder,"w")
+out1 = open("MLE.free."+MarkerInit,"w")
 for j in range(len(zsol)):
 	out1.write(str(zsol[j])+'\n')
 print zsol
