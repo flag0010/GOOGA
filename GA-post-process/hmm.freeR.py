@@ -130,9 +130,10 @@ for line_idx, line in enumerate(inZ):
 
 Qi =  common.get_file(GAOutFile, 'adfadfa')
 
-xx = [idx for idx, i in enumerate(Qi) if 'individual=1' in i[0]]
+xx = [idx for idx, i in enumerate(Qi) if 'individual=1 ' in i[0]]
 #print xx
 final =  Qi[xx[-1]+2][0].replace('raw list order= ', '')
+print final
 os.popen('python make.new.input.file.from.winning.order.py '+MarkerInit+' '+'"'+final+'" > better.'+ MarkerInit)
 
 Position={}
@@ -175,7 +176,4 @@ out1 = open("MLE.free."+MarkerInit,"w")
 for j in range(len(zsol)):
 	out1.write(str(zsol[j])+'\n')
 print zsol
-
-
-
 
