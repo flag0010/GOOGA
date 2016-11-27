@@ -78,7 +78,7 @@ For example, if NGEN is set to 500 and TERMINATION is set to 200, the genetic al
 The final input file is a starting a genomic scaffold order ("marker_file").  There's an example in markers.2.v2.txt.  The genetic algorithm uses this as a starting place.
 
 Then run the code:
-`python parallel.genet.alg.final.py markers.2.v2.txt -c 8 -e 1 -i LVR.isr.txt -f LVR.f2set.txt -e LVR.er2.txt > some.output.file`
+`python parallel.genet.alg.final.py markers.2.v2.txt -c 8 -l 1 -i LVR.isr.txt -f LVR.f2set.txt -e LVR.er2.txt > some.output.file`
 
 This runs on 8 CPUs with 1 elite on the test files noted above. And at each generation it will output various run statistics, including all current scaffold orders and likelihoods that the algorithm is grinding away on.
 
