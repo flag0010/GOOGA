@@ -38,6 +38,7 @@ where the columns are line_name, chromosome, interval, genotype
 Also the test data contains a list of all lines you wish to consider for ordering scaffolds, it's called `LVR.f2set.txt`, an estimate of the intitial intra-scaffold recombinantion rates called `LVR.isr.txt`, and a file of error rates called `LVR.er2.txt`.
 
 Finally, the genetic algorithm code is called `parallel.genet.alg.final.py`. It was written to be run on a multiprocessor system and can make use of parallelism.  It takes several flags at runtime.  To get these flags simply run:
+
 `python parallel.genet.alg.final.py --help`
 
 Usage: parallel.genet.alg.final.py marker_file [options]
@@ -66,18 +67,18 @@ Options:
   -t TERMINATION        Number of generations with no improvement before
                         termination - default=1000 
 
-NCPUs should be set according to your computer.  I was running on a 16 core machine, hence the settings.  
+NCPU should be set according to your computer.  I was running on a 16 core machine, hence the settings.    
 
-ELITE designates the number of contigs orders (in a genet. alg. they are called individuals) to be carried over to the next generation.  I've had good luck setting this between about 2-4.
+ELITE designates the number of contigs orders (in a GA they are called individuals) to be carried over to the next generation.  I've had good luck setting this between about 2-4.
 
-Remember that after the 1st generation you will have POP_SIZE - ELITE novel indv since we save past results, on a machine with 10 CPUs, if ELITE=2, you may want to do a popsize of 12, because that will max out all 10 CPUs after Gen 1
+The GA will automatically select it's population size based on NCPU and ELITE. Specifically, it will be NCPU + ELITE.  So for example, given the default settings, the GA population size will be 19.
 
-You can also control how long the genet. alg. runs, using both NGEN and TERMINATION.  NGEN simply sets a max number of generations for the genetic algorithm, whereas TERMINATION allows you to tell the genetic algorithm to stop after a specified number of generations where the best scaffold order (individual) has not be improved upon.
-For example, if NGEN is set to 500 and TERMINATION is set to 200, the genetic algorithm will stop at 500 generations total or 200 gen without improvement, whichever comes first.
+You can also control how long the GA runs, using both NGEN and TERMINATION.  NGEN simply sets a max number of generations for the GA, whereas TERMINATION allows you to tell the GA to stop after a specified number of generations where the best scaffold order (individual) has not be improved upon. For example, if NGEN is set to 500 and TERMINATION is set to 200, the GA will stop at 500 generations total or 200 gen without improvement, whichever comes first.
 
-The final input file is a starting a genomic scaffold order ("marker_file").  There's an example in markers.2.v2.txt.  The genetic algorithm uses this as a starting place.
+The only mandatory input file is a starting a genomic scaffold order ("marker_file").  There's an example in markers.2.v2.txt.  This file correpsonds to Chromosome 2 in Mimulus guttatus.  The GA uses this order as a starting place.
 
 Then run the code:
+
 `python parallel.genet.alg.final.py markers.2.v2.txt -c 8 -l 1 -i LVR.isr.txt -f LVR.f2set.txt -e LVR.er2.txt > some.output.file`
 
 This runs on 8 CPUs with 1 elite on the test files noted above. And at each generation it will output various run statistics, including all current scaffold orders and likelihoods that the algorithm is grinding away on.
