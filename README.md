@@ -1,59 +1,54 @@
-This project implements a algorithm to designed to take genotype data from a segregating population and use it to identify an optimal scaffold order from a perhaps not so well assembled genome.
-It does this by permuting scaffold orders from the genome assembly and fitting a HMM with genotype data to estimate recombination rates and the ultimate likelihood of a particular order.  Then this is fed into a genetic algorithm that searches for a optimal order.
+This project implements a genetic algorithm (GA) designed to take genotype data from a segregating population and use it to identify an optimal scaffold order from a perhaps not so well assembled genome.
+It does this by permuting scaffold orders from the genome assembly and fitting a HMM with genotype data to estimate recombination rates and the ultimate likelihood of a particular order.  Then this is fed into the GA to search for a near optimal order.
 
 The code runs in python and was developed for python2.7 and requires the scipy package to be installed.
 
 To run on the test data, first download this repo.  Then you need to extract the test data:
 
-` bunzip2 Lex2.tar.bz2` 
+` bunzip2 data/LVR.cross.tar.gz` 
 
-` tar xf Lex2.tar` 
+` tar xf data/LVR.cross.tar` 
 
-This gives several files, including the genotype files (e.g. `Genotypes.imswc922.txt`), which look like:
+This gives several files, including the genotype files (e.g. g.F2.163.txt), which look like:
 
-`head Genotypes.imswc922.txt`
-
-imswc922	1	0	AB
-
-imswc922	1	100000	AB
-
-imswc922	1	200000	AB
-
-imswc922	1	300000	AB
-
-imswc922	1	400000	AB
-
-imswc922	1	500000	AB
-
-imswc922	1	600000	NN
-
-imswc922	1	700000	AB
-
-imswc922	1	800000	AB
-
-imswc922	1	900000	AB
+`head g.F2.163.txt
+F2.163	1	0	AB
+F2.163	1	100000	AB
+F2.163	1	200000	AB
+F2.163	1	300000	AB
+F2.163	1	400000	AB
+F2.163	1	500000	AB
+F2.163	1	600000	AB
+F2.163	1	700000	AB
+F2.163	1	800000	AB
+F2.163	1	900000	AB`
 
 where the columns are line_name, chromosome, interval, genotype
 
-Also the test data contains a list of all lines you wish to consider for ordering scaffolds, it's called `test.f2group.txt`, and a file of error rates called `error.rates.txt`.
+Also the test data contains a list of all lines you wish to consider for ordering scaffolds, it's called `LVR.f2set.txt`, an estimate of the intitial intra-scaffold recombinantion rates called `LVR.isr.txt`, and a file of error rates called `LVR.er2.txt`.
 
-Finally before running you'll need to edit the main genetic algorithm code.  It's called `parallel.genet.alg.optimize.select.contigs.py`. It was written to be run on a multiprocessor system and can make use of parallelism.  The file as several global variables set at the top:
+Finally, the genetic algorithm code is called `parallel.genet.alg.final.py`. It was written to be run on a multiprocessor system and can make use of parallelism.  It takes several flags at runtime.  To get these flags simply run:
+`python parallel.genet.alg.final.py --help
+Usage: parallel.genet.alg.final.py marker_file [options]
 
-`POP_SIZE = 16  #pop size`
-
-`NGEN = 1000000000 #generations to run`
-
-`MUTATION = [0, 1, 2, 3]  #randomly select one value from this list to determine the number of mutations an indiv. pass on to next gen.`
-
-`ELITE = 3  #number best individuals to save at each generation`
-
-`TERMINATION = 100 #if the most fit line doesn't change for 100 generation, end the run`
-
-`NCPUs = 16 #number of cpus to run on.`  
+Options:
+  -h, --help            show this help message and exit
+  -e ERROR_FILE         File with precaculated error rates -
+                        default=error.rates.txt
+  -f F2_FILE            File with F2s to use in analysis -
+                        default=test.f2group.txt
+  -i INTRASCAFF_RATES_FILE
+                        File with precalculated intra-scaffold recombination
+                        rates - default=intrascaff_rates.txt
+  -c NCPU               Number of CPUs - default=16
+  -g NGEN               Number of generations to run the GA - default=10^10
+  -l ELITE              Number of elite in each generation default=3
+  -t TERMINATION        Number of generations with no improvement before
+                        termination - default=1000` 
 
 NCPUs should be set according to your computer.  I was running on a 16 core machine, hence the settings.  
 
-And ELITE designates the number of contigs orders (in a genet. alg. they are called individuals) to be carried over to the next generation.  I've had good luck setting this between about 2-4.
+ELITE designates the number of contigs orders (in a genet. alg. they are called individuals) to be carried over to the next generation.  I've had good luck setting this between about 2-4.
 
 Remember that after the 1st generation you will have POP_SIZE - ELITE novel indv since we save past results, on a machine with 10 CPUs, if ELITE=2, you may want to do a popsize of 12, because that will max out all 10 CPUs after Gen 1
 
