@@ -7,7 +7,7 @@ The code runs in python and was developed for python2.7 and requires the scipy p
 
 To run on the test data, first download this repo.  Then you need to extract the test data:
 
-` bunzip2 data/LVR.cross.tar.gz` 
+` gunzip data/LVR.cross.tar.gz` 
 
 ` tar xf data/LVR.cross.tar` 
 
@@ -37,9 +37,9 @@ F2.163	1	900000	AB
 
 where the columns are line_name, chromosome, interval, genotype
 
-Also the test data contains a list of all lines you wish to consider for ordering scaffolds, it's called `LVR.f2set.txt`, an estimate of the intitial intra-scaffold recombinantion rates called `LVR.isr.txt`, and a file of error rates called `LVR.er2.txt`.
+Also the test data contains a list of all segregating lines you wish to consider for ordering scaffolds, it's called `LVR.f2set.txt`, an estimate of the intitial intra-scaffold recombinantion rates called `LVR.isr.txt`, and a file of error rates called `LVR.er2.txt`.
 
-Finally, the genetic algorithm code is called `parallel.genet.alg.final.py`. It was written to be run on a multiprocessor system and can make use of parallelism.  It takes several flags at runtime.  To get these flags simply run:
+Finally, the genetic algorithm code is called `parallel.genet.alg.final.py`. It was written to be run on a multiprocessor system and can make use of parallelism.  It takes several flags at runtime.  To get help on these flags simply run:
 
 `python parallel.genet.alg.final.py --help`
 
@@ -69,13 +69,13 @@ Options:
   -t TERMINATION        Number of generations with no improvement before
                         termination - default=1000 
 
-NCPU should be set according to your computer.  I was running on a 16 core machine, hence the settings.    
+NCPU should be set according to your computer.  The code was developed for a 16 core machine, hence the settings.    
 
 ELITE designates the number of contigs orders (in a GA they are called individuals) to be carried over to the next generation.  I've had good luck setting this between about 2-4.
 
 The GA will automatically select it's population size based on NCPU and ELITE. Specifically, it will be NCPU + ELITE.  So for example, given the default settings, the GA population size will be 19.
 
-You can also control how long the GA runs, using both NGEN and TERMINATION.  NGEN simply sets a max number of generations for the GA, whereas TERMINATION allows you to tell the GA to stop after a specified number of generations where the best scaffold order (individual) has not be improved upon. For example, if NGEN is set to 500 and TERMINATION is set to 200, the GA will stop at 500 generations total or 200 gen without improvement, whichever comes first.
+You can also control how long the GA runs, using both NGEN and TERMINATION.  NGEN simply sets a max number of generations for the GA, whereas TERMINATION allows you to tell the GA to stop after a specified number of generations where the best scaffold order (individual) has not be improved upon. For example, if NGEN is set to 500 and TERMINATION is set to 200, the GA will stop at 500 generations total or 200 gen without improvement, whichever comes first.  As a default the NGEN is set astronomically high, to rely only on TERMINATION to end the run.
 
 The only mandatory input file is a starting a genomic scaffold order ("marker_file").  There's an example in markers.2.v2.txt.  This file correpsonds to Chromosome 2 in Mimulus guttatus.  The GA uses this order as a starting place.
 
