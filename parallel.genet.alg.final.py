@@ -1,5 +1,4 @@
 #import a bunch of stuff
-from fitness_fixed_intra_scaff_and_optimize_select_contigs import fitness ##repackaging of John's likelihood calc. code
 from common import sampler, weighted_sampler, get_file, defaultdict
 import os, sha, sys, re, random, copy, time, multiprocessing
 from optparse import OptionParser
@@ -14,6 +13,7 @@ parser.add_option('-c', action="store", dest="NCPU", default = 16, help='Number 
 parser.add_option('-g', action="store", dest="NGEN", default = 10000000000, type=int, help='Number of generations to run the GA - default=10^10')
 parser.add_option('-l', action='store', dest='ELITE', default=3, type=int, help = 'Number of elite in each generation default=3')
 parser.add_option('-t', action='store', dest='TERMINATION', default=1000, type=int, help='Number of generations with no improvement before termination - default=1000' )
+parser.add_option('-r',	action='store_true', dest='RILs', default=False, help='Use -r flag if your mapping pop is RILs - default is F2 seg. pop')
 my_args = parser.parse_args()[0]
 
 #below options can be modified at command line
@@ -21,6 +21,13 @@ NGEN = my_args.NGEN #generations to run
 NCPUs = my_args.NCPU #number of cpus to run on. 
 ELITE = my_args.ELITE  #number best individuals to save at each generation
 TERMINATION = my_args.TERMINATION #if the most fit line doesn't change for TERMINATION generation, end the run
+RILs = my_args.RILs
+if RILs: 
+    from RIL_fitness_fixed_intra_scaff_and_optimize_select_contigs import fitness
+    print 'USING RIL'
+else:
+    from fitness_fixed_intra_scaff_and_optimize_select_contigs import fitness
+    print 'USING F2'
 #print my_args
 
 #mutation option cannot be modified at the command line
