@@ -68,6 +68,7 @@ Options:
   
   -t TERMINATION        Number of generations with no improvement before
                         termination - default=1000 
+  
   -r                    Use -r flag if your mapping pop is RILs - default is
                         F2 seg. pop
 
