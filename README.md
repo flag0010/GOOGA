@@ -1,4 +1,4 @@
-# Genomic Contig Order Optimization Program (GCOOP)
+# GenomeMapping
 
 This project implements a genetic algorithm (GA) designed to take genotype data from a segregating population and use it to identify an optimal scaffold order from a perhaps not so well assembled genome.
 It does this by permuting scaffold orders from the genome assembly and fitting a HMM with genotype data to estimate recombination rates and the ultimate likelihood of a particular order.  Then this is fed into the GA to search for a near optimal order.
