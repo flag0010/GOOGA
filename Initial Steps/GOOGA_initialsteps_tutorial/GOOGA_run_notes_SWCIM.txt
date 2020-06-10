@@ -1,0 +1,141 @@
+#First steps of GOOGA for data with high amounts of missing data or lots of genotyping error
+#Written by Nic Kooyers as an idiot's guide to using John Kelly's initial programs
+
+
+#This example is a from an QTL experiment examining the genetic basis of variation in critical photoperiod in Mimulus guttatas. Specifically this experiment investigates the genetic basis of the ability to flower in a 13hr day length growth chamber using an F2 population created from parents that varied in their critical photoperiod. The initial multiplex shotgun genotyping dataset produced a dataset with lots of missing data at each marker.
+
+#This tutorial begins following Ben Blackman's Windowing Algorithm (to call SNPs in windows of 75 SNPs across the genome)
+#This Windowing Algorithm can be found here: https://github.com/BlackmanLabUCB/Genotyping-by-Sequencing
+
+
+#Initial file that I got from Ben was IMxSWCnoadd_t3_spr18_just13.qtl_input_edited.csv
+#This was a rQTL file, each 'marker' consists of a window of 75 SNPs and genotypes reflect whatever the majority genotype was within each window. There is a threshold level of presence data needed to make a call.
+#However, the initial filtering was weak and gave quite a bit of error (and wide peaks) when creating a linkage map in rQTL, I am going to impose some stricter filters and create a better linkage map using JKK's first programs in GOOGA 
+#You can skip step 1A if you already have a well-filtered dataset 
+
+#Step1A Filtering in Excel
+#Need to do some filtering first. Removed any individual with greater than 80% missing data and individuals that had heterozygotes in <25% or >75% or loci
+#I did this using Excel simply because it is really quick and easy. I resaved the initial file with a new name (, then I deleted rows 1,2,4,5. I converted each individual name to something easier to work with than Ben's long string (I preformed text to columns with the delimiter ":". Then, I replaced all of "imswc" with "F2"). I also converted all A calls to AA, all H calls to AB, all B calls to BB, and all - calls to NN.
+#For each column (each individual in the mapping populations), I determined the missing data by using the COUNTIF(array, "delimiter") function. For instance, =COUNTIF(C2:C979 "NN") determines the number of unknown genotypes in individual first individual. I removed any individuals with >80% missing data.
+#See my excel sheet First_Filter_Stats.xlsx to see my filtering example
+#I also looked at the % of heterozygotes calls across all markers for each individual. This should average around 50% with some skew expected. I got rid of any individuals with <25% or >75% hets. Thus I ended up with a list of individuals to keep and an list to cut.
+
+#Step1B creating input files
+#Input needs separate text files for each plant. Files must be names with g*
+#Each should have 4 columns with no headers. Columns: plant ID, chrom, window_position, genotype
+# I made these inputs by removing the rows 1,2,4,5, saving the file as a .csv and then using my rscript titled: create_GOOGA_imputs_swcim.r . FYI, the rscript provided will make input files for each individuals 100-199. You can copy, paste into a new file and replace all "F2_1" with "F2_2" to create 200-299 and so on and so forth to create any other input files with this same code. Once I had all field from 1-960, I simply deleted the ones that I didn't want.
+
+
+#my path to my working directory
+cd /Users/nic/Genomics/CriticalPhotoperiod/Just_ppd_data/g_files
+
+#Step 2: estimate genotyping error rates per plant. 
+#make an empty folder with the title "bad.marks.txt."
+vi bad.marks.txt
+
+#the python program hmm_scaff_likelihood.v3.py will get genotype error rate for your data. You need to run it for each individual file and your files must be labeled g.
+#create an .sh script to run each file - basic command python hmm_scaff_likelihood.v3.py 	F2_8
+#my dataset is estimate.genotyping.error.rates.sh
+sh estimate.genotyping.error.rates.sh
+
+./estimate.genotyping.error.rates.sh
+
+#This should print off the plantID followed by number of loci called and then three different error rates:
+#e1 is the probability that a homozygote is mistakenly called het
+#e2 is rate that homozygote mistakenly called alternative homozygote
+#beta is probability that a true het mistakenly called homozygote 
+
+#Copy this information into an excel spreadsheet. Save as a tab delimited file with no header. Mine is named ISG.f2.error.rates.txt
+
+#We need to filter individuals based their genotype errors
+#John's criteria is less than 20% (0.2) error for each of the different error rates. Use the AND() function to tell you which samples are high quality - i.e. any individuals that have <.2 for all error rates. My example excel file is: ISG_genotyping_error_r1.xlsx
+#With the individuals that pass the test, make a new file. For me this is called: ISG.low.error.f2s.txt
+
+
+#Step 3: calculate intrascaffold recombination rates
+#We now put this in a program that calculates interscaffold recombination rates. I always need to type this into the command line because there is something odd with my formating below.
+
+# You do not need the parenthesis, the g. file can be any correct genotype file, the last file name is going to be your output file.
+# This one will take a while to run
+
+#my example
+python hmm.intrascaff.R.py​ [ISG.f2.error.rates.txt] [g.F2_001.txt] [ISG_low.error.f2s.txt] [MLE.iscaff.ISG.f2.txt]
+
+
+#Step 4: Get rid of crappy markers
+
+#The output file (MLE.iscaff.nic.f2.txt) has your first linkage map! Column 1 is the chromosome, column 2 is the marker. In
+#column 3, each value is the intrascaffold recombination rate between the marker for that row and the
+#marker below. The units on this are in probability of recombination (or cM/100). The maximum value
+#here is 0.25 (this should not be a surprise because the max recombination rate is .5 (ie. unlinked)
+#and there is a 50% chance that recombination occurs before the marker and a 50% change it occurs
+#after the marker (thus .25 each way). This may mean that a marker is either in the wrong location
+#(a possible inversion polymorphism in the cross) or just poorly fit the genotype error algorthim and should have been discarded.
+
+#How do you determine which of these possibilities is correct? Well, we can discard these markers as
+#see if there are still large recombination distance in the same spots. If is the case, then our
+#chromosome needs reordering in GOOGA. If this fixes the problem, then the marker was simply bad.
+
+#Ok, lets get rid of the bad markers. So highlight each of the crappy markers in yellow in excel.
+#There is likely either one maker with .25 or two markers. Remember the recombination rate is
+#calculated with the marker below it. So get rid of the marker below the .25 in case of a single
+#marker with a .25. If there are two markers back to back with .25, then get rid of the second one.
+
+#Compile the list of bad markers into your previously created tab delimited text file named bad.marks.txt. You only need two columns, Chromosome and Marker, but do not put in a header line
+
+# Now we can rerun the program calculating intrascaffold error rates with the bad.marks version of the last program and see if we get rid of the 0.25 errors
+
+#Model
+python hmm.intrascaff.R.badmarks.py nic.f2.error.rates.txt g.F2_412.txt low.error.f2s.txt MLE.iscaff.ISG.f2.v2.txt bad.marks.txt​
+
+#For the ISG data, the potential chr 5, chr 8 and chr 8 (2) inversions were all still present. The chr 13 is gone, but this inversion consisted of only 2 markers and I removed both
+
+
+#I prefer a dataset with the inversions simply removed. You can test the inversions separately from any interval mapping. 
+#The next step is to run without the inversions present
+#I simply put all the markers in each inversion into a new bad.marks.txt file - I named it bad.marks2.txt
+python hmm.intrascaff.R.badmarks.py nic.f2.error.rates.txt g.F2_412.txt low.error.f2s.txt MLE.iscaff.ISG.f2.v2.txt bad.marks2.txt
+
+
+Step 5: Go back and get genotyping error rates and intrascaffold maps for polished dataset
+#First convert bad.marks2.txt into just bad.marks.txt
+#Then run the same program as in step 2
+sh estimate.genotyping.error.rates_ISG.sh
+
+#Same process as before, any individual with over 20% error, don't include in the low error rates files
+
+python hmm.intrascaff.R.badmarks.py ISG.f2.error.rate.final.txt g.F2_002.txt ISG.low.error.rates.final.txt MLE.iscaff.ISG.f2.final.txt bad.marks.txt​
+
+#The output for this is your final linkage map. For an rQTL input, you need to add all the rf between markers together for each chromosome to determine how far each marker is from the beginning of the chromosome. I simply use the following excel code for each chromosome:
+#First marker, cM = 0
+#Second marker, cM = 100*D2
+#Third maker, cM= 100*SUM($D$2:D3)
+#Assuming your recombination fractions are in column D with the first marker starts in cell D2.
+#Start each chromosome over with this same code and then fill down to the end of the chromosome with the formula for the 3rd marker 
+
+
+Step 6: Estimate genotypes at each locus for each individual
+#next step is to get genotype probabilities for each individual for each marker to stick them into rQTL.
+#The program (Genotype.pp.py) to estimate genotype posteriors one chromosome at time and the sh shell script is pp.shell.sh
+
+#the .sh file has the inputs [chr#] [error.rates.file.txt] [list of F2s.txt] [finalmap.txt]
+#this needs to be done for each chr
+
+python Genotype.pp.py	1	 ISG.low.error.rates.final allF2.txt MLE.v3.txt
+python Genotype.pp.py	14	 ISG.f2.error.rate.final.txt allF2s.txt MLE.iscaff.ISG.f2.final.txt
+
+#actual command
+sh pp.shell.sh
+
+
+#Step 7 Convert into an rQTL file	
+#I took all of the resulting text files and concatenated them into a single file
+
+cat 1.pp.txt 2.pp.txt 3.pp.txt 4.pp.txt 5.pp.txt 6.pp.txt 7.pp.txt 8.pp.txt 9.pp.txt 10.pp.txt 11.pp.txt 12.pp.txt 13.pp.txt 14.pp.txt > allmarker.txt
+
+# I opened this file in Excel and made a rule to find get the genotype (i.e. three columns with IF statemtents, then sum, then convert to genotype)
+# I use the criteria that the genotype call needs a posterior probability of >.9
+
+#I then took this long file and used a custom R subsetting code to make a genotype matrix
+#My example is ISG_subsetting_code.R
+#I transposed this matrix, added the final map and added phenotype information for each individual and saved as a csv. file
