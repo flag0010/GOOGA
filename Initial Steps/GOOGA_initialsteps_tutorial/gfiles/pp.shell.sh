@@ -1,0 +1,14 @@
+python Genotype.pp.py	1	 ISG.f2.error.rate.final.txt allF2s.txt MLE.iscaff.ISG.f2.final.txt
+python Genotype.pp.py	2	 ISG.f2.error.rate.final.txt allF2s.txt MLE.iscaff.ISG.f2.final.txt
+python Genotype.pp.py	3	 ISG.f2.error.rate.final.txt allF2s.txt MLE.iscaff.ISG.f2.final.txt
+python Genotype.pp.py	4	 ISG.f2.error.rate.final.txt allF2s.txt MLE.iscaff.ISG.f2.final.txt
+python Genotype.pp.py	5	 ISG.f2.error.rate.final.txt allF2s.txt MLE.iscaff.ISG.f2.final.txt
+python Genotype.pp.py	6	 ISG.f2.error.rate.final.txt allF2s.txt MLE.iscaff.ISG.f2.final.txt
+python Genotype.pp.py	7	 ISG.f2.error.rate.final.txt allF2s.txt MLE.iscaff.ISG.f2.final.txt
+python Genotype.pp.py	8	 ISG.f2.error.rate.final.txt allF2s.txt MLE.iscaff.ISG.f2.final.txt
+python Genotype.pp.py	9	 ISG.f2.error.rate.final.txt allF2s.txt MLE.iscaff.ISG.f2.final.txt
+python Genotype.pp.py	10	 ISG.f2.error.rate.final.txt allF2s.txt MLE.iscaff.ISG.f2.final.txt
+python Genotype.pp.py	11	 ISG.f2.error.rate.final.txt allF2s.txt MLE.iscaff.ISG.f2.final.txt
+python Genotype.pp.py	12	 ISG.f2.error.rate.final.txt allF2s.txt MLE.iscaff.ISG.f2.final.txt
+python Genotype.pp.py	13	 ISG.f2.error.rate.final.txt allF2s.txt MLE.iscaff.ISG.f2.final.txt
+python Genotype.pp.py	14	 ISG.f2.error.rate.final.txt allF2s.txt MLE.iscaff.ISG.f2.final.txt
