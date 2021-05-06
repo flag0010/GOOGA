@@ -75,7 +75,7 @@ The GA will automatically select it's population size based on NCPU and ELITE. S
 
 You can also control how long the GA runs, using both NGEN and TERMINATION.  NGEN simply sets a max number of generations for the GA, whereas TERMINATION allows you to tell the GA to stop after a specified number of generations where the best scaffold order (individual) has not been improved upon. For example, if NGEN is set to 500 and TERMINATION is set to 200, the GA will stop at 500 generations total or 200 gen without improvement, whichever comes first.  As a default the NGEN is set astronomically high, to rely only on TERMINATION to end the run.
 
-Finally the -r flag is a boolean, which when used swithces the HMM backend to accomadate a RIL population (no hets) rather than a standard seg pop, like a F2 (has hets).  If you don't use this flag, the GA defaults to standard F2 seg. pop.
+Finally the -r flag is a boolean, which when used switches the HMM backend to accomadate a RIL population (no hets) rather than a standard seg pop, like a F2 (has hets).  If you don't use this flag, the GA defaults to standard F2 seg. pop.
 
 The only mandatory input file is a starting a genomic scaffold order ("marker_file").  There's an example in markers.2.v2.txt.  This file correpsonds to Chromosome 2 in Mimulus guttatus.  The GA uses this order as a starting place.
 
